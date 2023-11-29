@@ -1,9 +1,34 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::net::SocketAddr;
-use tokio::net::UdpSocket;
+// use tokio::net::UdpSocket;
 
 type Any = String;
+
+#[derive(Debug)]
+enum NPDUMessage {
+    WhoIsRouterToNetwork,
+    IAmRouterToNetwork,
+    ICouldBeRouterToNetwork,
+    RejectMessageToNetwork,
+    RouterBusyToNetwork,
+    RouterAvailableToNetwork,
+    InitializeRoutingTable,
+    InitializeRoutingTableAck,
+    EstablishConnectionToNetwork,
+    DisconnectConnectionToNetwork,
+    ChallengeRequest,
+    SecurityPayload,
+    SecurityResponse,
+    RequestKeyUpdate,
+    UpdateKeySet,
+    UpdateDistributionKey,
+    RequestMasterKey,
+    SetMasterKey,
+    WhatIsNetworkNumber,
+    NetworkNumberIs,
+    Proprietary(u8),
+}
 
 #[derive(Debug)]
 struct PCI {
@@ -92,10 +117,41 @@ fn is_bacnet_message(data: &[u8]) -> bool {
     data.starts_with(&[0x81, 0x0B]) || data.starts_with(&[0x81, 0x0A])
 }
 
+fn determine_bacnet_message(data: &[u8]) -> Option<NPDUMessage> {
+    if data.len() < 2 {
+        return None; // Not enough data to determine the message type
+    }
+
+    match data[0] {
+        0x00 => Some(NPDUMessage::WhoIsRouterToNetwork),
+        0x01 => Some(NPDUMessage::IAmRouterToNetwork),
+        0x02 => Some(NPDUMessage::ICouldBeRouterToNetwork),
+        0x03 => Some(NPDUMessage::RejectMessageToNetwork),
+        0x04 => Some(NPDUMessage::RouterBusyToNetwork),
+        0x05 => Some(NPDUMessage::RouterAvailableToNetwork),
+        0x06 => Some(NPDUMessage::InitializeRoutingTable),
+        0x07 => Some(NPDUMessage::InitializeRoutingTableAck),
+        0x08 => Some(NPDUMessage::EstablishConnectionToNetwork),
+        0x09 => Some(NPDUMessage::DisconnectConnectionToNetwork),
+        0x0A => Some(NPDUMessage::ChallengeRequest),
+        0x0B => Some(NPDUMessage::SecurityPayload),
+        0x0C => Some(NPDUMessage::SecurityResponse),
+        0x0D => Some(NPDUMessage::RequestKeyUpdate),
+        0x0E => Some(NPDUMessage::UpdateKeySet),
+        0x0F => Some(NPDUMessage::UpdateDistributionKey),
+        0x10 => Some(NPDUMessage::RequestMasterKey),
+        0x11 => Some(NPDUMessage::SetMasterKey),
+        0x12 => Some(NPDUMessage::WhatIsNetworkNumber),
+        0x13 => Some(NPDUMessage::NetworkNumberIs),
+        0x80..=0xFF => Some(NPDUMessage::Proprietary(data[0])),
+        _ => None, // Unknown message type
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     println!("Starting UDP server on 0.0.0.0:47808...");
-    let socket = UdpSocket::bind("0.0.0.0:47808").await?;
+    let socket = tokio::net::UdpSocket::bind("0.0.0.0:47808").await?;
     println!("UDP server listening...");
 
     let mut buf = [0; 1024];
@@ -113,14 +169,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("Structured PDU: {:?}", pdu);
 
         if is_bacnet_message(&buf[..len]) {
-            println!("Received a BACnet message");
-            // Further BACnet-specific processing can be done here
-        } else {
-            match pdu.pdu_data.to_string() {
-                Ok(message) => println!("Decoded message: {}", message),
-                Err(e) => println!("Failed to decode message: {:?}", e),
+            if let Some(bacnet_message) = determine_bacnet_message(&buf[..len]) {
+                println!("Received a BACnet message: {:?}", bacnet_message);
+                // Further BACnet-specific processing can be done here based on bacnet_message
+            } else {
+                match pdu.pdu_data.to_string() {
+                    Ok(message) => println!("Decoded message: {}", message),
+                    Err(e) => println!("Failed to decode message: {:?}", e),
+                }
             }
+        } else {
+            println!("Not a BACnet message");
         }
         println!("PDU contents: {:?}", pdu.dict_contents());
     }
 }
+
