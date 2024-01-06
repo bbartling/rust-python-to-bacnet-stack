@@ -8,6 +8,8 @@ having a bare minimum BACnet read write property interface for Rust and Python e
 # Python
 
 See the `ctester.py` for an example of using `ctypes` to perform a read property request and have data returned from the bacnet-stack. Requires Python knowledge and typical environment setup. 
+Python users should be using the new asyncio based [bacpypes3](https://github.com/JoelBender/BACpypes3) created by Joel Bender which is an actual robust and complete BACnet Stack in Python with lots of community support. 
+The idea for this project to incorporate a Python FFI feature to C is to test the waters for a bare bones basic read/write BACnet driver creation for non-asyncio Python IoT frameworks.
 
 # Rust
 
