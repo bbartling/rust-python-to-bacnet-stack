@@ -1,9 +1,8 @@
 # rust-python-to-bacnet-stack
 Exploratory Foreign Function Interface (FFI) for Rust and Python to interface with the robust and distinguished [bacnet-stack](https://github.com/bacnet-stack/bacnet-stack) written in C created by Steve Karg.
-The process thus far has been working with the example apps in the bacnet-stack and compiling them with `make clean all` per directions of the bacnet-stack.
+The process thus far has been compiling the C bacnet-stack with the `make clean all` per directions of the bacnet-stack with a modified Makefile to output a `.so` file for this app that is based off of the bacnet-stack sample apps.
 
-This project contains a compiled `.so` file from the C stack from the `main.c`. The compiled `.so` containts the FFI for Rust and Python to interface with the intention of
-having a bare minimum BACnet read write property interface for Rust and Python edge environment IoT apps.
+This repo contains the compiled `.so`, the `Makefile` used on the bacnet-stack compiling, and the `main.c` that containts all of the FFI functions to interface to Rust and Python.
 
 # Python
 
